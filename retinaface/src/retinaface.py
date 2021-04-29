@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-# from utilpack.util import *
 import os
 import cv2
 
@@ -131,6 +130,60 @@ class RetinaFace(object):
             })
 
         return faces
+    
+    def extract(self,rgb_image,is_bgr=True):
+        """
+        detect face in rgb image
+
+        :param rgb_image: rgb image, any size, float32
+        :param threshold: threshold of confidence
+        :return: faces(list), eache face(dict) has a key = [ x1, y1, x2, y2,left_eye,right_eye,nose,left_lip,right_lip ]
+        """
+        
+        threshold=0.95
+
+        img_h_, img_w_ = rgb_image.shape[:2]
+
+        if img_h_>img_w_:
+            rgb_image = self._resizeFunc([rgb_image,'height'])
+        else:
+            rgb_image = self._resizeFunc([rgb_image, 'width'])
+
+        img_h, img_w = rgb_image.shape[:2]
+
+        # preprocessing (padding)
+        max_steps = 32
+        img_h_pad = max_steps - img_h % max_steps if img_h and img_h % max_steps != 0 else 0
+        img_w_pad = max_steps - img_w % max_steps if img_w and img_w % max_steps != 0 else 0
+        padded_img = tf.pad(rgb_image, [[0, img_h_pad], [0, img_w_pad], [0, 0]])
+        x = tf.cast(padded_img, dtype=tf.float32)
+
+        # prediction
+        outputs = tf.squeeze(self._model(x[tf.newaxis, ...]), axis=0)
+
+        # postprocessing (remove-padding,ratio to pixcel, threshold)
+        outputs = tf.concat([
+            tf.reshape(tf.multiply(tf.reshape(tf.slice(outputs, [0, 0], [-1, 14]), [-1, 7, 2]),
+                                   [tf.add(img_w_pad, img_w if img_w else 0),
+                                    tf.add(img_h_pad, img_h if img_h else 0)]),
+                       [-1, 14]),
+            tf.slice(outputs, [0, 14], [-1, 2])
+        ], axis=1)
+        outputs = tf.gather_nd(outputs, tf.where(tf.squeeze(tf.slice(outputs, [0, 15], [-1, 1]), axis=-1) >= threshold))
+
+        faces=[]
+        for bbox in outputs:
+            w_ex = img_w_ / img_w
+            h_ex = img_h_ / img_h
+            x1, y1, x2, y2 = list(map(int, np.multiply(bbox[:4],[w_ex,h_ex,w_ex,h_ex])))
+            left_eye,right_eye,nose,left_lip,right_lip = list(map(tuple,np.multiply(np.reshape(bbox, [-1, 2]),[w_ex,h_ex]).astype(np.int)[2:-1]))
+            faces.append({
+                'x1':x1,'y1':y1,'x2':x2,'y2':y2,
+                'left_eye':left_eye,'right_eye':right_eye,'nose':nose,'left_lip':left_lip,'right_lip':right_lip
+            })
+
+        olist=[(f['x1'],f['y1'],f['x2']-f['x1'],f['y2']-f['y1']) for f in faces]
+        return olist
 
     def draw(self,rgb_image, faces,thickness=3,**kwargs):
         """
