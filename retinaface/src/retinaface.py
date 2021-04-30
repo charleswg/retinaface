@@ -11,9 +11,9 @@ class RetinaFace(object):
         """
 
         if quality == 'normal':
-            self._resizeFunc = lambda v: cv2.resize_image(v[0], **{v[1]: 800})
+            self._resizeFunc = lambda v: cv2.resize(v[0], dsize=(800,800))
         elif quality =='speed':
-            self._resizeFunc = lambda v: cv2.resize_image(v[0], **{v[1]: 320})
+            self._resizeFunc = lambda v: cv2.resize(v[0], dsize=(320,320))
         else:
             self._resizeFunc = lambda v: v[0]
 
@@ -34,7 +34,7 @@ class RetinaFace(object):
             tf.nest.map_structure(import_graph.as_graph_element, ['Identity:0'])
         )
         self.predict(np.zeros((320,320,3),dtype=np.float32))
-        print("model success !")
+#         print("model success !")
 
     def read(self,image_path):
         """
