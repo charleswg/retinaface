@@ -1,10 +1,11 @@
 
 # [RetinaFace](https://github.com/heewinkim/retinaface)
-(remove utilpack dependence and replace it with opencv dependence)
  face detector with landmarks, RetinaFace PyPI implement
  
  reference : https://github.com/peteryuX/retinaface-tf2 
- 
+
+(this branch remove utilpack dependence and replace it with opencv dependence)
+
 ![](https://img.shields.io/badge/python-3.6.1-blue)
 ![](https://img.shields.io/badge/tensorflow-2.0.0-orange)
 
